@@ -1,10 +1,10 @@
 # o2go
 
-[![Go Report Card](https://goreportcard.com/badge/github.com/gokhanaltun/o2go)](https://goreportcard.com/report/github.com/gokhanaltun/o2go)
-
 [![Go Reference](https://pkg.go.dev/badge/github.com/gokhanaltun/o2go.svg)](https://pkg.go.dev/github.com/gokhanaltun/o2go)
-
+[![Go Report Card](https://goreportcard.com/badge/github.com/gokhanaltun/o2go)](https://goreportcard.com/report/github.com/gokhanaltun/o2go)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+---
 
 **A simple and flexible OAuth2 client for Go.**  
 Handles **authorization code** and **refresh token flows**, with **context support**, **custom HTTP clients**, and **rich error handling**.  
