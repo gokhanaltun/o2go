@@ -36,7 +36,7 @@ Or use ready-made providers from `o2go-providers` (like Google, GitHub, etc.) wh
 ## Installation
 
 ```bash
-go get github.com/yourusername/o2go
+go get github.com/gokhanaltun/o2go
 ```
 
 ---
@@ -52,7 +52,7 @@ import (
     "fmt"
     "net/http"
 
-    "github.com/yourusername/o2go"
+    "github.com/gokhanaltun/o2go"
 )
 
 func main() {
