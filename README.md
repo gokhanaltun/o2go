@@ -61,6 +61,11 @@ import (
     "github.com/gokhanaltun/o2go"
 )
 
+type MyProvider struct{}
+
+func (p *MyProvider) AuthURL() string  { return "https://example.com/oauth/authorize" }
+func (p *MyProvider) TokenURL() string { return "https://example.com/oauth/token" }
+
 func main() {
     cfg := &o2go.Config{
         ClientID:     "your-client-id",
@@ -191,8 +196,3 @@ type ExchangeResponse struct {
 
 Supports `errors.Unwrap()`.
 
----
-
-## License
-
-MIT License — free to use, modify, and distribute.
