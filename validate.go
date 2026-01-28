@@ -15,10 +15,6 @@ func (o *OAuth2) validate() error {
 		return ErrNilProvider
 	}
 
-	if o.HTTPClient == nil {
-		return ErrNilHTTPClient
-	}
-
 	if strings.TrimSpace(o.Provider.AuthURL()) == "" {
 		return ErrEmptyAuthURL
 	}
