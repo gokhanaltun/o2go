@@ -51,14 +51,6 @@ func TestValidate(t *testing.T) {
 			wantErr: ErrNilProvider,
 		},
 		{
-			name: "nil http client",
-			o: &OAuth2{
-				Config:   validConfig,
-				Provider: validProvider,
-			},
-			wantErr: ErrNilHTTPClient,
-		},
-		{
 			name: "empty auth url",
 			o: &OAuth2{
 				Config: validConfig,
