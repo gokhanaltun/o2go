@@ -228,4 +228,4 @@ o2go is provider-agnostic by design.
 If you want provider-specific integrations (e.g. Google, GitHub),
 see the official provider modules:
 
-- https://github.com/gokhanaltun/o2go-providers
+- **[o2go-providers](https://github.com/gokhanaltun/o2go-providers)**
