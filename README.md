@@ -6,36 +6,46 @@
 
 ---
 
-**A simple and flexible OAuth2 client for Go.**  
-Handles **authorization code** and **refresh token flows**, with **context support**, **custom HTTP clients**, and **rich error handling**.  
+**A lightweight and flexible OAuth2 core library for Go.**
+
+o2go provides the **core OAuth2 mechanics** (authorization code and refresh token flows)  
+without forcing provider-specific logic, storage decisions, or opinionated abstractions.
 
 ---
 
 ## Why o2go?
 
-Many Go OAuth2 libraries:
+Most OAuth2 libraries in the Go ecosystem tend to:
 
-- Force opinions on **state**, **scopes**, or **token storage**.  
-- Make it hard to inject custom HTTP clients.  
-- Limit error inspection or context cancellation.  
+- Be heavy and opinionated
+- Mix provider-specific behavior into the core
+- Enforce how you manage state, scopes, or tokens
+- Hide HTTP details and make debugging harder
 
-**o2go solves these gaps:**
+**o2go takes a different approach:**
 
-- Minimal, focused on token exchange flows only.  
-- Full control over **state**, **scopes**, and **token persistence**.  
-- Supports **context-aware** requests and **custom HTTP clients**.  
-- Rich `HTTPError` including **status codes** and **response body** for debugging.  
+- Minimal and focused on OAuth2 mechanics only
+- Provider-agnostic by design
+- Full control over parameters and request behavior
+- Context-aware requests and custom HTTP clients
+- Rich error inspection with access to status codes and response bodies
 
-You can also use **custom providers**:
+o2go is **not a framework**  it is a clean and flexible building block.
 
-```go
-type MyProvider struct{}
+---
 
-func (p *MyProvider) AuthURL() string  { return "https://example.com/oauth/authorize" }
-func (p *MyProvider) TokenURL() string { return "https://example.com/oauth/token" }
-```
+## Providers
 
-Or use ready-made providers from `o2go-providers` (like Google, GitHub, etc.) when available.
+o2go itself does not depend on any provider.
+
+You can either:
+
+- Implement your own provider
+- Or use optional, ready-made providers from  
+  [`o2go-providers`](https://github.com/gokhanaltun/o2go-providers)
+
+Provider packages exist for convenience and isolation —  
+they do not change or pollute the core.
 
 ---
 
@@ -45,20 +55,25 @@ Or use ready-made providers from `o2go-providers` (like Google, GitHub, etc.) wh
 go get github.com/gokhanaltun/o2go
 ```
 
+Optional providers:
+
+```bash
+go get github.com/gokhanaltun/o2go-providers/google
+```
+
 ---
 
-## Quick Start
+## Quick Start (Minimal)
 
 ```go
 package main
 
 import (
-    "context"
-    "errors"
-    "fmt"
-    "net/http"
+	"context"
+	"errors"
+	"fmt"
 
-    "github.com/gokhanaltun/o2go"
+	"github.com/gokhanaltun/o2go"
 )
 
 type MyProvider struct{}
@@ -67,36 +82,32 @@ func (p *MyProvider) AuthURL() string  { return "https://example.com/oauth/autho
 func (p *MyProvider) TokenURL() string { return "https://example.com/oauth/token" }
 
 func main() {
-    cfg := &o2go.Config{
-        ClientID:     "your-client-id",
-        ClientSecret: "your-client-secret",
-        RedirectURL:  "https://yourapp.com/callback",
-    }
+	cfg := &o2go.Config{
+		ClientID:     "your-client-id",
+		ClientSecret: "your-client-secret",
+		RedirectURL:  "https://yourapp.com/callback",
+	}
 
-    client, err := o2go.New(&MyProvider{}, cfg)
-    if err != nil {
-        panic(err)
-    }
+	client, err := o2go.New(&MyProvider{}, cfg)
+	if err != nil {
+		panic(err)
+	}
 
-    authURL, err := client.AuthCodeURL("random-state")
-    if err != nil {
-        panic(err)
-    }
-    fmt.Println("Open this URL:", authURL)
+	authURL, _ := client.AuthCodeURL("state123")
+	fmt.Println("Open:", authURL)
 
-    code := "code-from-callback"
-    resp, err := client.ExchangeAuthCode(context.Background(), code)
-    if err != nil {
-        var he *o2go.HTTPError
-        if errors.As(err, &he) {
-            fmt.Println("Status:", he.Status)
-            fmt.Println("Body:", string(he.Body))
-        } else {
-            fmt.Println("Other error:", err)
-        }
-    }
+	code := "code-from-callback"
+	resp, err := client.ExchangeAuthCode(context.Background(), code)
+	if err != nil {
+		var he *o2go.HTTPError
+		if errors.As(err, &he) {
+			fmt.Println("Status:", he.Status)
+			fmt.Println("Body:", string(he.Body))
+		}
+		return
+	}
 
-    fmt.Println("Access Token:", resp.Data["access_token"])
+	fmt.Println("Access Token:", resp.Data["access_token"])
 }
 ```
 
@@ -104,95 +115,117 @@ func main() {
 
 ## Advanced Usage
 
-### Custom HTTP client
+### Custom HTTP Client
 
 ```go
-httpClient := &http.Client{Timeout: 10 * time.Second}
+httpClient := &http.Client{
+	Timeout: 10 * time.Second,
+}
 
-client, err := o2go.New(&MyProvider{}, cfg, o2go.WithHttpClient(httpClient))
+client, err := o2go.New(provider, cfg, o2go.WithHttpClient(httpClient))
 ```
 
-### Refresh token flow
+If no client is provided, `http.DefaultClient` is used.
+
+---
+
+### Refresh Token Flow
 
 ```go
 refreshToken := resp.Data["refresh_token"].(string)
+
 newResp, err := client.ExchangeRefreshToken(context.Background(), refreshToken)
 if err != nil {
-    var he *o2go.HTTPError
-    if errors.As(err, &he) {
-        fmt.Println("Status:", he.Status)
-        fmt.Println("Body:", string(he.Body))
-    } else {
-        fmt.Println("Other error:", err)
-    }
+	var he *o2go.HTTPError
+	if errors.As(err, &he) {
+		fmt.Println("Status:", he.Status)
+		fmt.Println("Body:", string(he.Body))
+	}
+	return
 }
 
 fmt.Println("New Access Token:", newResp.Data["access_token"])
 ```
 
-### Adding extra token parameters
+---
+
+### Provider-Specific Parameters (Scopes, PKCE, Extras)
+
+o2go does not introduce special helpers for extensions like PKCE.
+
+OAuth2 extensions are expressed **purely through parameters**:
 
 ```go
+cfg.AuthURLParams = map[string]string{
+	"scope": "profile email",
+	"code_challenge": "...",
+	"code_challenge_method": "S256",
+}
+
 cfg.TokenParams = map[string]string{
-    "audience": "my-api",
+	"code_verifier": "...",
 }
 ```
 
-These parameters are automatically merged into the token request while respecting reserved keys like `grant_type` or `client_id`.
+This keeps the core simple and avoids opinionated abstractions.
 
 ---
 
 ## Error Handling
 
-`ExchangeAuthCode` and `ExchangeRefreshToken` return `HTTPError` for non-2xx responses:
+All non-2xx HTTP responses are returned as `HTTPError`.
+
+```go
+type HTTPError struct {
+	Status int
+	Body   []byte
+	Err    error
+}
+```
+
+`HTTPError` implements `Unwrap`, making it fully compatible with `errors.As`:
 
 ```go
 var he *o2go.HTTPError
 if errors.As(err, &he) {
-    fmt.Println("Status:", he.Status)
-    fmt.Println("Body:", string(he.Body))
+	fmt.Println("Status:", he.Status)
+	fmt.Println("Body:", string(he.Body))
 }
 ```
-
-This allows full inspection of HTTP status codes and response bodies.
 
 ---
 
-## API Reference
+## Design Principles
 
-### `func New(provider Provider, cfg *Config, opts ...Option) (*OAuth2, error)`
+* **Core vs Provider separation**
+  Core handles OAuth2 mechanics. Provider-specific behavior stays isolated.
 
-* Creates a new OAuth2 instance.
-* Optional `WithHttpClient(client *http.Client)`.
+* **No opinionated helpers**
+  OAuth2 extensions are parameters, not features.
 
-### `func (o *OAuth2) AuthCodeURL(state string) (string, error)`
+* **Minimal surface area**
+  Small API, predictable behavior, easy to reason about.
 
-Builds the authorization URL. App manages `state`.
+* **Opt-in providers**
+  Use only what you need — nothing more.
 
-### `func (o *OAuth2) ExchangeAuthCode(ctx context.Context, code string) (*ExchangeResponse, error)`
+---
 
-Exchanges **authorization code** for tokens.
+## Summary
 
-### `func (o *OAuth2) ExchangeRefreshToken(ctx context.Context, refreshToken string) (*ExchangeResponse, error)`
+* Lightweight OAuth2 core
+* Provider-agnostic design
+* Full control over flows and parameters
+* Rich, inspectable errors
+* No hidden magic
 
-Exchanges **refresh token** for new tokens.
+---
 
-### `type ExchangeResponse`
+## Providers
 
-```go
-type ExchangeResponse struct {
-    Raw  []byte
-    Data map[string]any
-}
-```
+o2go is provider-agnostic by design.
 
-* `Decode(v any) error` — decode raw JSON response.
+If you want provider-specific integrations (e.g. Google, GitHub),
+see the official provider modules:
 
-### `type HTTPError`
-
-* `Status int` — HTTP status code
-* `Body []byte` — raw response body
-* `Err error` — wrapped underlying error
-
-Supports `errors.Unwrap()`.
-
+- https://github.com/gokhanaltun/o2go-providers
