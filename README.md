@@ -34,31 +34,10 @@ o2go is **not a framework**  it is a clean and flexible building block.
 
 ---
 
-## Providers
-
-o2go itself does not depend on any provider.
-
-You can either:
-
-- Implement your own provider
-- Or use optional, ready-made providers from  
-  [`o2go-providers`](https://github.com/gokhanaltun/o2go-providers)
-
-Provider packages exist for convenience and isolation —  
-they do not change or pollute the core.
-
----
-
 ## Installation
 
 ```bash
 go get github.com/gokhanaltun/o2go
-```
-
-Optional providers:
-
-```bash
-go get github.com/gokhanaltun/o2go-providers/google
 ```
 
 ---
@@ -223,9 +202,12 @@ if errors.As(err, &he) {
 
 ## Providers
 
-o2go is provider-agnostic by design.
+o2go itself is provider-agnostic. You can either:
 
-If you want provider-specific integrations (e.g. Google, GitHub),
-see the official provider modules:
+- Implement your own provider
+- Or use optional, ready-made provider modules (Google, GitHub, etc.) from:  
+  **[o2go-providers](https://github.com/gokhanaltun/o2go-providers)**
 
-- **[o2go-providers](https://github.com/gokhanaltun/o2go-providers)**
+Provider packages exist for convenience and isolation —  
+they do not change or pollute the core.
+
